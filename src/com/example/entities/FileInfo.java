@@ -1,11 +1,13 @@
 package com.example.entities;
 
+import java.io.Serializable;
+
 /**
  * 文件信息
  * @author Administrator
  *
  */
-public class FileInfo {
+public class FileInfo implements Serializable {
 	private int id;
 	private String url;
 	private String fileName;

@@ -25,7 +25,7 @@ public class ThreadDAOImpl implements ThreadDAO {
 	@Override
 	public void insertThread(ThreadInfo threadInfo) {
 		SQLiteDatabase db = mHelper.getWritableDatabase();
-		db.execSQL("insert into thread_info(thread_id, url, start, end, finish) values(?, ?, ?, ?, ?)", 
+		db.execSQL("insert into thread_info(thread_id, url, start, end, finished) values(?, ?, ?, ?, ?)", 
 				new Object[]{threadInfo.getId(), threadInfo.getUrl(), 
 				threadInfo.getStart(), threadInfo.getEnd(), threadInfo.getFinished()});
 		db.close();

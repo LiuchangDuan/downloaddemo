@@ -24,7 +24,9 @@ public class DownloadService extends Service {
 			"/downloads/";
 	public static final String ACTION_START = "ACTION_START";
 	public static final String ACTION_STOP = "ACTION_STOP";
+	public static final String ACTION_UPDATE = "ACTION_UPDATE";
 	public static final int MSG_INIT = 0;
+	private DownloadTask mTask = null;
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
@@ -37,6 +39,9 @@ public class DownloadService extends Service {
 		} else if (ACTION_STOP.equals(intent.getAction())) {
 			FileInfo fileInfo = (FileInfo) intent.getSerializableExtra("fileInfo");
 			Log.i("test", "Stop" + fileInfo.toString());
+			if (mTask != null) {
+				mTask.isPause = true;
+			}
 		}
 		return super.onStartCommand(intent, flags, startId);
 	}
@@ -52,6 +57,9 @@ public class DownloadService extends Service {
 			case MSG_INIT:
 				FileInfo fileInfo = (FileInfo) msg.obj;
 				Log.i("test", "Init : " + fileInfo);
+				//启动下载任务
+				mTask = new DownloadTask(DownloadService.this, fileInfo);
+				mTask.download();
 				break;
 
 			default:

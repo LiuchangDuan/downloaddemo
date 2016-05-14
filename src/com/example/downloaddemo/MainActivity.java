@@ -1,7 +1,10 @@
 package com.example.downloaddemo;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -31,9 +34,10 @@ public class MainActivity extends Activity {
         mPbProgress = (ProgressBar) findViewById(R.id.pbProgress);
         mBtStop = (Button) findViewById(R.id.btStop);
         mBtStart = (Button) findViewById(R.id.btStart);
+        mPbProgress.setMax(100);
         //创建文件信息对象
-        final FileInfo fileInfo = new FileInfo(0, "http://s1.music.126.net/download/pc/cloudmusicsetup_2_0_3[131777].exe", 
-        		"cloudmusicsetup_2_0_3[131777].exe", 0, 0);
+        final FileInfo fileInfo = new FileInfo(0, "http://www.imooc.com/mobile/imooc.apk", 
+        		"imooc.apk", 0, 0);
         //添加事件监听
         mBtStart.setOnClickListener(new View.OnClickListener() {
 			
@@ -56,5 +60,29 @@ public class MainActivity extends Activity {
 				startService(intent);
 			}
 		});
+        //注册广播接收器
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(DownloadService.ACTION_UPDATE);
+        registerReceiver(mReceiver, filter);
     }
+    
+    protected void onDestroy() {
+    	super.onDestroy();
+    	unregisterReceiver(mReceiver);
+    };
+    
+    /**
+     * 更新UI的广播接收器
+     */
+    BroadcastReceiver mReceiver = new BroadcastReceiver() {
+
+		@Override
+		public void onReceive(Context arg0, Intent intent) {
+			if (DownloadService.ACTION_UPDATE.equals(intent.getAction())) {
+				int finished = intent.getIntExtra("finished", 0);
+				mPbProgress.setProgress(finished);
+			}
+		}
+    	
+    };
 }

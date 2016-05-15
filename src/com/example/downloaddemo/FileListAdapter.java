@@ -51,6 +51,7 @@ public class FileListAdapter extends BaseAdapter {
 
 	@Override
 	public View getView(int position, View view, ViewGroup viewGroup) {
+		final FileInfo fileInfo = mFileList.get(position);
 		ViewHolder holder = null;
 		if (view == null) {
 			//加载视图
@@ -61,38 +62,49 @@ public class FileListAdapter extends BaseAdapter {
 			holder.btStop = (Button) view.findViewById(R.id.btStop);
 			holder.btStart = (Button) view.findViewById(R.id.btStart);
 			holder.pbProgress = (ProgressBar) view.findViewById(R.id.pbProgress);
+			holder.tvFileName.setText(fileInfo.getFileName());
+			holder.pbProgress.setMax(100);
+			holder.btStart.setOnClickListener(new View.OnClickListener() {
+				
+				@Override
+				public void onClick(View v) {
+					//通知Service开始下载
+					Intent intent = new Intent(mContext, DownloadService.class);
+					intent.setAction(DownloadService.ACTION_START);
+					intent.putExtra("fileInfo", fileInfo);
+					mContext.startService(intent);
+				}
+			});
+			holder.btStop.setOnClickListener(new View.OnClickListener() {
+				
+				@Override
+				public void onClick(View v) {
+					//通知Service停止下载
+					Intent intent = new Intent(mContext, DownloadService.class);
+					intent.setAction(DownloadService.ACTION_STOP);
+					intent.putExtra("fileInfo", fileInfo);
+					mContext.startService(intent);
+				}
+			});
 			view.setTag(holder);
 		} else {
 			holder = (ViewHolder) view.getTag();
 		}
 		//设置视图中的控件
-		final FileInfo fileInfo = mFileList.get(position);
-		holder.tvFileName.setText(fileInfo.getFileName());
-		holder.pbProgress.setMax(100);
 		holder.pbProgress.setProgress(fileInfo.getFinished());
-		holder.btStart.setOnClickListener(new View.OnClickListener() {
-			
-			@Override
-			public void onClick(View v) {
-				//通知Service开始下载
-				Intent intent = new Intent(mContext, DownloadService.class);
-				intent.setAction(DownloadService.ACTION_START);
-				intent.putExtra("fileInfo", fileInfo);
-				mContext.startService(intent);
-			}
-		});
-		holder.btStop.setOnClickListener(new View.OnClickListener() {
-			
-			@Override
-			public void onClick(View v) {
-				//通知Service停止下载
-				Intent intent = new Intent(mContext, DownloadService.class);
-				intent.setAction(DownloadService.ACTION_STOP);
-				intent.putExtra("fileInfo", fileInfo);
-				mContext.startService(intent);
-			}
-		});
 		return view;
+	}
+	
+	/**
+	 * 更新列表项中的进度条
+	 */
+	public void updateProgress(int id, int progress) {
+		FileInfo fileInfo = mFileList.get(id);
+		fileInfo.setFinished(progress);
+		/*
+		 * 该方法可以在修改适配器绑定的数组后不用重新刷新Activity，通知Activity更新ListView(调用getView())
+		 */
+		notifyDataSetChanged();
 	}
 	
 	/**

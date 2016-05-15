@@ -1,10 +1,11 @@
 package com.example.services;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.apache.http.HttpStatus;
 
@@ -13,41 +14,60 @@ import android.content.Intent;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
-import android.util.Log;
 
 import com.example.entities.FileInfo;
 
 public class DownloadService extends Service {
 	
+	//下载路径
 	public static final String DOWNLOAD_PATH = 
 			Environment.getExternalStorageDirectory().getAbsolutePath() + 
 			"/downloads/";
+	//开始下载命令
 	public static final String ACTION_START = "ACTION_START";
+	//停止下载命令
 	public static final String ACTION_STOP = "ACTION_STOP";
+	//结束下载命令
+	public static final String ACTION_FINISH = "ACTION_FINISH";
+	//更新UI命令
 	public static final String ACTION_UPDATE = "ACTION_UPDATE";
-	public static final int MSG_INIT = 0;
-	private DownloadTask mTask = null;
+	//初始化标识
+	public static final int MSG_INIT = 0x1;
+	private InitThread mInitThread = null;
+	//下载任务的集合
+	private Map<Integer, DownloadTask> mTasks = new LinkedHashMap<Integer, DownloadTask>(); 
+//	private DownloadTask mTask = null;
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		//获得Activity传来的参数
 		if (ACTION_START.equals(intent.getAction())) {
 			FileInfo fileInfo = (FileInfo) intent.getSerializableExtra("fileInfo");
-			Log.i("test", "Start : " + fileInfo.toString());
-			//启动初始化线程
-			new InitThread(fileInfo).start();
+//			Log.i("test", "Start : " + fileInfo.toString());
+			//接到下载命令，启动初始化线程
+			mInitThread = new InitThread(fileInfo);
+			DownloadTask.sExecutorService.execute(mInitThread);
+//			new InitThread(fileInfo).start();
 		} else if (ACTION_STOP.equals(intent.getAction())) {
+//			FileInfo fileInfo = (FileInfo) intent.getSerializableExtra("fileInfo");
+//			Log.i("test", "Stop" + fileInfo.toString());
+			//暂停下载
 			FileInfo fileInfo = (FileInfo) intent.getSerializableExtra("fileInfo");
-			Log.i("test", "Stop" + fileInfo.toString());
-			if (mTask != null) {
-				mTask.isPause = true;
+			//从集合中取出下载任务
+			DownloadTask task = mTasks.get(fileInfo.getId());
+			if (task != null) {
+				//停止下载任务
+				task.isPause = true;
 			}
+//			if (mTask != null) {
+//				mTask.isPause = true;
+//			}
 		}
 		return super.onStartCommand(intent, flags, startId);
 	}
 	
 	@Override
-	public IBinder onBind(Intent arg0) {
+	public IBinder onBind(Intent intent) {
 		return null;
 	}
 	
@@ -55,11 +75,16 @@ public class DownloadService extends Service {
 		public void handleMessage(android.os.Message msg) {
 			switch (msg.what) {
 			case MSG_INIT:
+				//获得初始化的结果
 				FileInfo fileInfo = (FileInfo) msg.obj;
-				Log.i("test", "Init : " + fileInfo);
+//				Log.i("test", "Init : " + fileInfo);
 				//启动下载任务
-				mTask = new DownloadTask(DownloadService.this, fileInfo);
-				mTask.download();
+				DownloadTask task = new DownloadTask(DownloadService.this, fileInfo, 3);
+				task.download();
+				//把下载任务添加到集合中
+				mTasks.put(fileInfo.getId(), task);
+//				mTask = new DownloadTask(DownloadService.this, fileInfo);
+//				mTask.download();
 				break;
 
 			default:

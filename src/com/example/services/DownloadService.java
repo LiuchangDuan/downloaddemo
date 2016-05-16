@@ -83,6 +83,10 @@ public class DownloadService extends Service {
 				task.download();
 				//把下载任务添加到集合中
 				mTasks.put(fileInfo.getId(), task);
+				//发送一个启动命令的广播
+				Intent intent = new Intent(DownloadService.ACTION_START);
+				intent.putExtra("fileInfo", fileInfo);
+				sendBroadcast(intent);
 //				mTask = new DownloadTask(DownloadService.this, fileInfo);
 //				mTask.download();
 				break;

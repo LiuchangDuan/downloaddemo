@@ -14,6 +14,7 @@ import android.widget.Toast;
 
 import com.example.entities.FileInfo;
 import com.example.services.DownloadService;
+import com.example.utils.NotificationUtil;
 
 
 public class MainActivity extends Activity {
@@ -21,6 +22,7 @@ public class MainActivity extends Activity {
 	private ListView mLvFile = null;
 	private List<FileInfo> mFileList = null;
 	private FileListAdapter mAdapter = null;
+	private NotificationUtil mNotificationUtil = null;
 	
 //	private TextView mTvFileName = null;
 //	
@@ -86,7 +88,10 @@ public class MainActivity extends Activity {
         IntentFilter filter = new IntentFilter();
         filter.addAction(DownloadService.ACTION_UPDATE);
         filter.addAction(DownloadService.ACTION_FINISH);
+        filter.addAction(DownloadService.ACTION_START);
         registerReceiver(mReceiver, filter);
+        
+        mNotificationUtil = new NotificationUtil(this);
     }
     
     protected void onDestroy() {
@@ -106,6 +111,8 @@ public class MainActivity extends Activity {
 				int finished = intent.getIntExtra("finished", 0);
 				int id = intent.getIntExtra("id", 0);
 				mAdapter.updateProgress(id, finished);
+				//更新通知里的进度
+				mNotificationUtil.updateNotification(id, finished);
 //				mPbProgress.setProgress(finished);
 			} else if (DownloadService.ACTION_FINISH.equals(intent.getAction())) {
 				//下载结束
@@ -113,6 +120,11 @@ public class MainActivity extends Activity {
 				//更新进度为0
 				mAdapter.updateProgress(fileInfo.getId(), 0);
 				Toast.makeText(MainActivity.this, mFileList.get(fileInfo.getId()).getFileName() + "下载完毕", Toast.LENGTH_SHORT).show();
+				//取消通知
+				mNotificationUtil.cancelNotification(fileInfo.getId());
+			} else if (DownloadService.ACTION_START.equals(intent.getAction())) {
+				//显示通知
+				mNotificationUtil.showNotification((FileInfo) intent.getSerializableExtra("fileInfo"));
 			}
 		}
     	

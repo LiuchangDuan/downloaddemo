@@ -36,6 +36,7 @@ public class DownloadTask {
 	private int mThreadCount = 1; // 线程数量
 	private List<DownloadThread> mThreadList = null; // 线程集合
 	public static ExecutorService sExecutorService = Executors.newCachedThreadPool(); // 线程池
+	private Timer mTimer = new Timer(); //定时器
 	
 	public DownloadTask(Context mContext, FileInfo mFileInfo, int mThreadCount) {
 		this.mContext = mContext;
@@ -72,6 +73,18 @@ public class DownloadTask {
 			//添加线程到集合中（方便管理）
 			mThreadList.add(thread);
 		}
+		//启动定时任务
+		mTimer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				//发送广播修改Activity进度
+				Intent intent = new Intent(DownloadService.ACTION_UPDATE);
+				intent.putExtra("finished", mFinished * 100 / mFileInfo.getLength());
+				intent.putExtra("id", mFileInfo.getId());
+				mContext.sendBroadcast(intent);
+			}
+		//delay,period	
+		}, 1000, 1000);
 		
 //		ThreadInfo threadInfo = null;
 //		if (threadInfos.size() == 0) {
@@ -97,6 +110,8 @@ public class DownloadTask {
 			}
 		}
 		if (allFinished) {
+			//取消定时器
+			mTimer.cancel();
 			//删除线程信息
 			mDao.deleteThread(mFileInfo.getUrl());
 			//发送广播通知UI下载任务结束
@@ -144,8 +159,8 @@ public class DownloadTask {
 					//读取数据
 					int len = 0;
 					byte[] buffer = new byte[1024];
-					Intent intent = new Intent(DownloadService.ACTION_UPDATE);
-					long time = System.currentTimeMillis();
+//					Intent intent = new Intent(DownloadService.ACTION_UPDATE);
+//					long time = System.currentTimeMillis();
 					input = conn.getInputStream();
 					while ((len = input.read(buffer)) != -1) {
 						//写入文件
@@ -154,14 +169,6 @@ public class DownloadTask {
 						mFinished += len;
 						//累加每个线程完成的进度
 						mThreadInfo.setFinished(mThreadInfo.getFinished() + len);
-						//间隔1000毫秒更新一次进度
-						if (System.currentTimeMillis() - time > 1000) {
-							time = System.currentTimeMillis();
-							//发送进度到Activity
-							intent.putExtra("finished", mFinished * 100 / mFileInfo.getLength());
-							intent.putExtra("id", mFileInfo.getId());
-							mContext.sendBroadcast(intent);
-						}
 						if (isPause) {
 							//在下载暂停时，保存下载进度
 							mDao.updateThread(mThreadInfo.getUrl(), mThreadInfo.getId(), mThreadInfo.getFinished());

@@ -69,12 +69,37 @@ public class NotificationUtil {
 			intentStop.putExtra("fileInfo", fileInfo);
 			PendingIntent piStop = PendingIntent.getService(mContext, 0, intentStop, 0);
 			remoteViews.setOnClickPendingIntent(R.id.btStop, piStop);
+			//设置TextView
+			remoteViews.setTextViewText(R.id.tvFile, fileInfo.getFileName());
 			//设置Notification的视图
 			notification.contentView = remoteViews;
 			//发出通知广播
 			mNotificationManager.notify(fileInfo.getId(), notification);
 			//把通知加到集合中
 			mNotifications.put(fileInfo.getId(), notification);
+		}
+	}
+	
+	/**
+	 * 取消通知
+	 * @param id
+	 */
+	public void cancelNotification(int id) {
+		mNotificationManager.cancel(id);
+		mNotifications.remove(id);
+	}
+	
+	/**
+	 * 更新进度条
+	 * @param id
+	 * @param progress
+	 */
+	public void updateNotification(int id, int progress) {
+		Notification notification = mNotifications.get(id);
+		if (notification != null) {
+			//修改进度条
+			notification.contentView.setProgressBar(R.id.pbProgress, 100, progress, false);
+			mNotificationManager.notify(id, notification);
 		}
 	}
 	
